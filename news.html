@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Play Maza – Global Video Hub</title>
+  <meta name="description" content="Play Maza: Search, discover and watch YouTube videos with a slick, fast UI." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui'] },
+          colors: {
+            pm: {
+              50: '#f3f6ff', 100:'#e6edff', 200:'#c6d6ff', 300:'#99b4ff', 400:'#6d92ff', 500:'#3b6bff', 600:'#224ee6', 700:'#1b3dbc', 800:'#173497', 900:'#132a78'
+            }
+          },
+          boxShadow: { soft: '0 10px 30px rgba(0,0,0,0.12)'}
+        }
+      }
+    }
+  </script>
+  <style>
+    .bg-video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: brightness(0.35) saturate(1.1);}    
+    .glass { backdrop-filter: blur(12px) saturate(150%); background: rgba(18, 24, 40, 0.55); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .line-clamp-1, .line-clamp-2 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+    .line-clamp-1 { -webkit-line-clamp: 1; }
+    .line-clamp-2 { -webkit-line-clamp: 2; }
+    #toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 60; }
+    .loader { width: 48px; height: 48px; border: 5px solid #FFF; border-bottom-color: transparent; border-radius: 50%; display: inline-block; box-sizing: border-box; animation: rotation 1s linear infinite; }
+    @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-slate-950 text-white font-sans min-h-screen">
+  <video class="bg-video" src="https://cdn.coverr.co/videos/coverr-typing-on-a-laptop-9717/1080p.mp4" autoplay muted loop playsinline></video>
+
+  <div id="toast" class="hidden"></div>
+
+  <header class="glass sticky top-0 z-40 shadow-soft">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3">
+      <button id="sidebarToggle" class="p-2 rounded-xl hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-pm-400" aria-label="Toggle sidebar">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" /></svg>
+      </button>
+      <a href="#" class="flex items-center gap-2 select-none" aria-label="Homepage">
+        <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-pm-500 to-pm-700 grid place-content-center shadow-soft">
+          <span class="font-extrabold text-white">▶</span>
+        </div>
+        <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight">Play <span class="text-pm-400">Maza</span></h1>
+      </a>
+
+      <form id="searchForm" class="ml-auto flex-1 max-w-2xl relative">
+        <input id="searchInput" class="w-full glass rounded-2xl py-2.5 pl-4 pr-12 outline-none focus:ring-2 focus:ring-pm-400 placeholder-white/60" type="search" placeholder="Search global videos…" aria-label="Search videos" />
+        <button class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl hover:bg-white/10" aria-label="Search">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.2-5.2M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z"/></svg>
+        </button>
+      </form>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-12 gap-6">
+    <aside id="sidebar" class="col-span-12 md:col-span-3 xl:col-span-2 glass rounded-3xl p-4 md:sticky md:top-20 h-max md:h-[calc(100vh-8rem)] md:overflow-y-auto no-scrollbar">
+      <nav class="space-y-2">
+        <button data-nav="trending" class="nav-btn w-full text-left px-4 py-2 rounded-2xl bg-white/10 font-medium">🔥 Trending</button>
+        <button data-nav="shorts" class="nav-btn w-full text-left px-4 py-2 rounded-2xl hover:bg-white/10 font-medium">⚡ Shorts</button>
+        <button data-nav="latest" class="nav-btn w-full text-left px-4 py-2 rounded-2xl hover:bg-white/10 font-medium">🆕 Latest</button>
+        <button data-nav="about" class="nav-btn w-full text-left px-4 py-2 rounded-2xl hover:bg-white/10 font-medium">ℹ️ About</button>
+      </nav>
+
+      <div class="mt-6 p-4 rounded-2xl bg-white/5">
+        <p class="text-sm text-white/80">Region for Trending</p>
+        <select id="regionSelect" class="mt-2 w-full bg-black/30 rounded-xl p-2 outline-none focus:ring-2 focus:ring-pm-400">
+          <option value="US">United States</option>
+          <option value="IN" selected>India</option>
+          <option value="GB">United Kingdom</option>
+          <option value="BR">Brazil</option>
+          <option value="JP">Japan</option>
+        </select>
+      </div>
+
+      <!-- API Key Manager has been removed -->
+
+    </aside>
+
+    <main class="col-span-12 md:col-span-9 xl:col-span-10 space-y-8">
+      <div id="demoBanner" class="hidden glass rounded-2xl p-4 border border-yellow-400/30">
+        <p class="text-sm"><strong>API Error:</strong> Could not fetch live data. Please check if the API key is valid or has expired. Running in <strong>Demo Mode</strong> with sample videos.</p>
+      </div>
+
+      <section>
+        <div class="flex items-center justify-between mb-4">
+          <h3 id="sectionTitle" class="text-xl md:text-2xl font-bold">Trending</h3>
+          <div id="resultCount" class="text-white/70 text-sm"></div>
+        </div>
+        <div id="loader" class="text-center py-10 hidden"><div class="loader mx-auto"></div></div>
+        <div id="grid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
+        <div id="loadMoreWrap" class="mt-6 hidden">
+          <button id="loadMore" class="mx-auto block px-5 py-2 rounded-2xl bg-white/10 hover:bg-white/20">Load more</button>
+        </div>
+      </section>
+
+      <section id="aboutSection" class="glass rounded-3xl p-6">
+        <h4 class="text-lg font-bold">About Play Maza</h4>
+        <p class="mt-2 text-white/80 text-sm leading-6">
+          Play Maza ek modern web application hai jiska istemal YouTube videos ko ek saaf aur tez interface mein dekhne ke liye kiya jaata hai. Is app mein aap neeche diye gaye features ka laabh utha sakte hain:
+          <ul class="list-disc list-inside mt-2 space-y-1">
+              <li><strong>Global Search:</strong> Duniya bhar ke kisi bhi topic par video search karein.</li>
+              <li><strong>Trending Videos:</strong> Alag-alag deshon ke trending videos dekhein.</li>
+              <li><strong>YouTube Shorts:</strong> Sirf short format ke entertaining videos ka anand lein.</li>
+              <li><strong>Latest Uploads:</strong> Pichhle ek mahine mein upload hue naye videos dekhein.</li>
+              <li><strong>Video Downloading:</strong> Kisi bhi video ko aasani se download karein.</li>
+          </ul>
+           <strong class="block mt-4">Downloads are not provided</strong> to respect YouTube's Terms of Service.
+        </p>
+      </section>
+
+      <footer class="text-center text-white/70 py-8">
+        <p>© <span id="year"></span> Play Maza — Yeh <strong>A.B. STUDIO</strong> ke dwara banaya gaya hai.</p>
+      </footer>
+    </main>
+  </div>
+
+  <div id="playerModal" class="fixed inset-0 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4 z-50">
+    <div class="w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden relative border border-white/10 shadow-soft">
+      <button id="closeModal" class="absolute top-3 right-3 p-2 rounded-lg bg-white/10 hover:bg-white/20 z-10" aria-label="Close player">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      <iframe id="modalPlayer" class="w-full h-full" src="" title="Player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    </div>
+  </div>
+
+  <script>
+    // API key is now included directly in the code.
+    const API_KEY = 'AIzaSyBAmnjMT02rrlcCuptdsBX3l0VOsnOe-8c';
+
+    const state = {
+      apiKey: API_KEY,
+      nextPageToken: null,
+      currentMode: 'trending',
+      lastQuery: '',
+      region: localStorage.getItem('pm_region') || 'IN',
+      demo: false, // Will be set to true only if API fails
+    };
+
+    const els = {
+      grid: document.getElementById('grid'),
+      resultCount: document.getElementById('resultCount'),
+      sectionTitle: document.getElementById('sectionTitle'),
+      loadMoreWrap: document.getElementById('loadMoreWrap'),
+      loadMore: document.getElementById('loadMore'),
+      regionSelect: document.getElementById('regionSelect'),
+      searchForm: document.getElementById('searchForm'),
+      searchInput: document.getElementById('searchInput'),
+      playerModal: document.getElementById('playerModal'),
+      modalPlayer: document.getElementById('modalPlayer'),
+      closeModal: document.getElementById('closeModal'),
+      sidebar: document.getElementById('sidebar'),
+      sidebarToggle: document.getElementById('sidebarToggle'),
+      demoBanner: document.getElementById('demoBanner'),
+      toast: document.getElementById('toast'),
+      loader: document.getElementById('loader'),
+      navButtons: document.querySelectorAll('.nav-btn'),
+    };
+
+    const DEMO_ITEMS = [
+      { id: { videoId: 'dQw4w9WgXcQ' }, snippet: { title: 'Never Gonna Give You Up', channelTitle: 'Rick Astley', publishedAt: '2009-10-25T07:57:33Z', thumbnails: { high: { url: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg' } } } },
+      { id: { videoId: '9bZkp7q19f0' }, snippet: { title: 'PSY - GANGNAM STYLE(강남스타일) M/V', channelTitle: 'officialpsy', publishedAt: '2012-07-15T07:46:00Z', thumbnails: { high: { url: 'https://i.ytimg.com/vi/9bZkp7q19f0/hqdefault.jpg' } } } },
+    ];
+
+    function runDemoMode() {
+      state.demo = true;
+      setDemoBanner();
+      return Promise.resolve({ items: DEMO_ITEMS, nextPageToken: null });
+    }
+
+    const toast = (msg, type = 'info') => {
+      const colors = { error: 'bg-red-500/90', success: 'bg-green-600/90', info: 'bg-black/70' };
+      els.toast.innerHTML = `<div class="px-4 py-2 rounded-xl shadow-soft ${colors[type]}">${msg}</div>`;
+      els.toast.classList.remove('hidden');
+      setTimeout(() => els.toast.classList.add('hidden'), 3200);
+    };
+
+    const api = async (endpoint, params = {}) => {
+      const url = new URL(`https://www.googleapis.com/youtube/v3/${endpoint}`);
+      const allParams = { key: state.apiKey, maxResults: 24, ...params };
+      for (const [k, v] of Object.entries(allParams)) {
+        if (v != null) url.searchParams.append(k, v);
+      }
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(`API Error: ${errorData.error?.errors[0]?.reason || 'Unknown'}`);
+        }
+        state.demo = false;
+        return res.json();
+      } catch (err) {
+        toast(err.message, 'error');
+        return runDemoMode();
+      }
+    };
+
+    const card = (v) => {
+      const id = v.id?.videoId || v.id;
+      const { title, channelTitle, publishedAt, thumbnails } = v.snippet;
+      const thumbUrl = thumbnails?.high?.url || 'https://via.placeholder.com/480x360?text=No+Image';
+      const time = new Date(publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      const downloadLink = `https://www.ssyoutube.com/watch?v=${id}`;
+
+      return `
+        <article class="glass rounded-2xl overflow-hidden border border-white/10 hover:border-pm-500/40 transition group relative">
+          <button class="w-full text-left" data-play="${id}">
+            <div class="relative aspect-video overflow-hidden">
+              <img src="${thumbUrl}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy"/>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+              <div class="absolute bottom-2 right-2 bg-black/60 px-2 py-0.5 rounded text-xs">${time}</div>
+            </div>
+            <div class="p-3">
+              <h4 class="font-semibold line-clamp-2">${title}</h4>
+              <p class="text-sm text-white/70 mt-1 line-clamp-1">${channelTitle}</p>
+            </div>
+          </button>
+          <a href="${downloadLink}" target="_blank" rel="noopener noreferrer" aria-label="Download Video" class="absolute top-2 right-2 p-2 rounded-full bg-black/50 hover:bg-pm-500 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          </a>
+        </article>`;
+    };
+
+
+    const render = (data, append = false) => {
+      const items = data.items || [];
+      const html = items.map(card).join('');
+      if (append) els.grid.insertAdjacentHTML('beforeend', html);
+      else els.grid.innerHTML = html;
+      
+      const count = els.grid.children.length;
+      els.resultCount.textContent = count ? `${count.toLocaleString()} videos` : '';
+
+      document.querySelectorAll('[data-play]').forEach(btn => btn.addEventListener('click', () => openPlayer(btn.dataset.play)));
+      els.loadMoreWrap.classList.toggle('hidden', !data.nextPageToken);
+      state.nextPageToken = data.nextPageToken || null;
+    };
+
+    const openPlayer = (id) => {
+      els.modalPlayer.src = `https://www.youtube.com/embed/${id}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0`;
+      els.playerModal.classList.remove('hidden');
+      els.playerModal.classList.add('flex');
+      document.body.classList.add('overflow-hidden');
+    };
+
+    const closePlayer = () => {
+      els.modalPlayer.src = '';
+      els.playerModal.classList.add('hidden');
+      els.playerModal.classList.remove('flex');
+      document.body.classList.remove('overflow-hidden');
+    };
+
+    async function executeLoad(loaderFn, append = false) {
+      if (!append) {
+        els.grid.innerHTML = '';
+        state.nextPageToken = null;
+      }
+      els.loader.classList.remove('hidden');
+      els.loadMoreWrap.classList.add('hidden');
+      
+      const data = await loaderFn(append);
+      render(data, append);
+      
+      els.loader.classList.add('hidden');
+      setDemoBanner();
+    }
+
+    const loaders = {
+        trending: (append) => {
+            const regionText = els.regionSelect.options[els.regionSelect.selectedIndex].text;
+            els.sectionTitle.textContent = `Trending in ${regionText}`;
+            return api('videos', { part: 'snippet', chart: 'mostPopular', regionCode: state.region, pageToken: append ? state.nextPageToken : null });
+        },
+        search: (append, q) => {
+            state.lastQuery = q;
+            els.sectionTitle.textContent = `Search: "${q}"`;
+            return api('search', { part: 'snippet', type: 'video', q, pageToken: append ? state.nextPageToken : null });
+        },
+        shorts: (append) => {
+            els.sectionTitle.textContent = 'YouTube Shorts';
+            // Searching for "#shorts" is the most reliable way to get only shorts videos.
+            return api('search', { part: 'snippet', type: 'video', q: '#shorts', pageToken: append ? state.nextPageToken : null });
+        },
+        latest: (append) => {
+            els.sectionTitle.textContent = 'Latest (Last 30 Days)';
+            // Calculate the date 30 days ago in RFC 3339 format (e.g., 1970-01-01T00:00:00Z)
+            const lastMonth = new Date();
+            lastMonth.setDate(lastMonth.getDate() - 30);
+            const publishedAfter = lastMonth.toISOString();
+            return api('search', { part: 'snippet', type: 'video', order: 'date', publishedAfter, pageToken: append ? state.nextPageToken : null });
+        },
+    };
+
+    function handleNav(mode) {
+      state.currentMode = mode;
+      els.navButtons.forEach(b => {
+        b.classList.toggle('bg-white/10', b.dataset.nav === mode);
+        b.classList.toggle('hover:bg-white/10', b.dataset.nav !== mode);
+      });
+      if (mode === 'about') {
+        document.getElementById('aboutSection').scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+      executeLoad(() => loaders[mode](false));
+    }
+
+    els.regionSelect.addEventListener('change', () => {
+      state.region = els.regionSelect.value;
+      localStorage.setItem('pm_region', state.region);
+      if (state.currentMode === 'trending') {
+        handleNav('trending');
+      }
+    });
+
+    els.searchForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = els.searchInput.value.trim();
+      if (q) {
+        state.currentMode = 'search';
+        executeLoad(() => loaders.search(false, q));
+      }
+    });
+
+    els.loadMore.addEventListener('click', () => {
+      if (!state.nextPageToken) return;
+      const loaderFunction = state.currentMode === 'search' 
+        ? () => loaders.search(true, state.lastQuery)
+        : () => loaders[state.currentMode](true);
+      executeLoad(loaderFunction, true);
+    });
+
+    els.navButtons.forEach(btn => btn.addEventListener('click', () => handleNav(btn.dataset.nav)));
+    
+    els.sidebarToggle.addEventListener('click', () => els.sidebar.classList.toggle('hidden'));
+    
+    els.playerModal.addEventListener('click', (e) => { if (e.target === els.playerModal) closePlayer(); });
+    els.closeModal.addEventListener('click', closePlayer);
+    
+    function setDemoBanner() {
+      els.demoBanner.classList.toggle('hidden', !state.demo);
+    }
+
+    function init() {
+      document.getElementById('year').textContent = new Date().getFullYear();
+      els.regionSelect.value = state.region;
+      handleNav('trending');
+    }
+
+    window.addEventListener('load', init);
+  </script>
+</body>
+</html>```
